@@ -9,7 +9,7 @@ public static class DuplicateWithoutAutoName {
     [MenuItem("Edit/Duplicate Without Auto-Name &d", false, -101)]
     public static void DeselectEverything() {
         foreach(var selectedObject in Selection.gameObjects) {
-            var newGo = GameObject.Instantiate(selectedObject, selectedObject.transform.parent);
+            var newGo = Object.Instantiate(selectedObject, selectedObject.transform.parent);
             newGo.name = newGo.name.Substring(0, newGo.name.Length - _lengthOfAddedString);
             _selection.Add(newGo.GetInstanceID());
         }

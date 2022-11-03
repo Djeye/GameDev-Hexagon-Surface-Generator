@@ -19,7 +19,11 @@ public static class CopyPasteTransformComponent {
 
     [MenuItem("Edit/Copy Transform Values &c", false, -101)]
     public static void CopyTransformValues() {
-        if(Selection.gameObjects.Length == 0) return;
+        if(Selection.gameObjects.Length == 0)
+        {
+            return;
+        }
+
         var selectionTr = Selection.gameObjects[0].transform;
         _data = new TransformData(selectionTr.localPosition, selectionTr.localRotation, selectionTr.localScale);
     }
@@ -37,15 +41,27 @@ public static class CopyPasteTransformComponent {
 
     [MenuItem("Edit/Copy Center Position &k", false, -101)]
     public static void CopyCenterPosition() {
-        if(Selection.gameObjects.Length == 0) return;
+        if(Selection.gameObjects.Length == 0)
+        {
+            return;
+        }
+
         var render = Selection.gameObjects[0].GetComponent<Renderer>();
-        if(render == null) return;
+        if(render == null)
+        {
+            return;
+        }
+
         _dataCenter = render.bounds.center;
     }
 
     [MenuItem("Edit/Paste Center Position &l", false, -101)]
     public static void PasteCenterPosition() {
-        if(_dataCenter == null) return;
+        if(_dataCenter == null)
+        {
+            return;
+        }
+
         foreach(var selection in Selection.gameObjects) {
             Undo.RecordObject(selection.transform, "Paste Center Position");
             selection.transform.position = _dataCenter.Value;
