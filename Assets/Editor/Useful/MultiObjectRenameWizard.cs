@@ -8,7 +8,7 @@ public class MultiObjectRenameWizard : ScriptableWizard {
     [MenuItem("Edit/Multi-Object Rename Wizard &f", false, -101)]
     public static void CreateWizard() {
         var sw = ScriptableWizard.DisplayWizard("Multi-Object Rename Wizard", typeof(MultiObjectRenameWizard), "Rename");
-        sw.minSize = sw.maxSize = new Vector2(400, 135);
+        sw.minSize = sw.maxSize = new Vector2(400, 150);
     }
 
     private void OnWizardCreate() {
