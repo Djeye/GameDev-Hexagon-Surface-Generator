@@ -21,8 +21,8 @@ public class WorldGenerator : MonoBehaviour
     public float HexagonHeight => hexagonHeight != 0 ? hexagonHeight : HexInfo.HEX_DEF_HEIGHT;
     public Vector3Int ChunkSize => chunkSize;
 
-    
-    private readonly Dictionary<Vector2Int, HexType[,,]> _terrain = new Dictionary<Vector2Int, HexType[,,]>();
+
+    public readonly Dictionary<Vector2Int, ChunkData> terrain = new Dictionary<Vector2Int, ChunkData>();
 
     private Transform _transform;
     private Vector3 _position;
@@ -36,22 +36,29 @@ public class WorldGenerator : MonoBehaviour
         }
 
         Instance = this;
-
+        
         _transform = transform;
         _position = transform.position;
     }
 
     private void Start()
     {
-        Iterations.Iterate(CreateChunk, chunkGridSize);
+        Iterations.Iterate(GenerateTerrain, chunkGridSize);
+        Iterations.Iterate(GenerateChunk, chunkGridSize);
     }
 
-
-    private void CreateChunk(int chunkX, int chunkY)
+    private void GenerateTerrain(int chunkX, int chunkY)
     {
         Vector2Int chunkIndex = new Vector2Int(chunkX, chunkY);
         HexType[,,] chunkTerrain = TerrainGenerator.GenerateChunkTerrain(chunkSize, chunkIndex);
-        _terrain.Add(chunkIndex, chunkTerrain);
+
+        ChunkData chunkData = new ChunkData(chunkIndex, chunkTerrain);
+        terrain.Add(chunkIndex, chunkData);
+    }
+
+    private void GenerateChunk(int chunkX, int chunkY)
+    {
+        Vector2Int chunkIndex = new Vector2Int(chunkX, chunkY);
 
         float xOffset = (chunkX * chunkSize.x + chunkY * chunkSize.z * 0.5f) * hexagonSize * HexInfo.SQRT3;
         float zOffset = chunkY * hexagonSize * chunkSize.z * 1.5f;
@@ -61,6 +68,6 @@ public class WorldGenerator : MonoBehaviour
         ChunkMeshGenerator chunk = Instantiate(chunkMeshGenerator, _position + posOffset, Quaternion.identity,
             _transform);
 
-        chunk.GenerateChunk(_terrain[chunkIndex]);
+        chunk.GenerateChunk(terrain[chunkIndex]);
     }
 }

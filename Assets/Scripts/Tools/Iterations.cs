@@ -15,6 +15,14 @@ namespace Tools
             Iterate(action, vector.x, vector.y, vector.z);
         }
 
+        public static void Iterate(Action<int> action, int sizeX)
+        {
+            for (int x = 0; x < sizeX; x++)
+            {
+                action?.Invoke(x);
+            }
+        }
+
         private static void Iterate(Action<int, int> action, int sizeX, int sizeY)
         {
             for (int x = 0; x < sizeX; x++)

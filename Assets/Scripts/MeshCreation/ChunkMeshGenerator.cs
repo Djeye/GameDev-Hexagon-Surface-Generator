@@ -5,7 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(MeshRenderer), typeof(MeshFilter), typeof(MeshCollider))]
 public class ChunkMeshGenerator : MonoBehaviour
 {
-    private HexType[,,] _hexagons;
+    private ChunkData _chunkData;
 
     private readonly List<Vector3> _verticies = new List<Vector3>();
     private readonly List<int> _triangles = new List<int>();
@@ -23,13 +23,14 @@ public class ChunkMeshGenerator : MonoBehaviour
     {
         _meshFilter = GetComponent<MeshFilter>();
         _meshCollider = GetComponent<MeshCollider>();
-        _hexagons = new HexType[ChunkSize.x, ChunkSize.y, ChunkSize.z];
+
+        //_hexagons = new HexType[ChunkSize.x, ChunkSize.y, ChunkSize.z];
     }
 
 
-    public void GenerateChunk(HexType[,,] terrain)
+    public void GenerateChunk(ChunkData chunkData)
     {
-        _hexagons = terrain;
+        _chunkData = chunkData;
 
         GenerateSurface();
         ApplyMesh();
@@ -58,7 +59,7 @@ public class ChunkMeshGenerator : MonoBehaviour
     {
         Vector3Int hexGridPosition = new Vector3Int(x, y, z);
 
-        if (GetHexagonAtPosition(hexGridPosition) == 0)
+        if (GetHexagonAtPosition(hexGridPosition) == HexType.Void)
         {
             return;
         }
@@ -95,7 +96,7 @@ public class ChunkMeshGenerator : MonoBehaviour
 
     private void TryConnectTriangles(HexInfo.Sides side, Vector3Int neighborPosition, int offset)
     {
-        if (GetHexagonAtPosition(neighborPosition) != 0)
+        if (GetHexagonAtPosition(neighborPosition) != HexType.Void)
         {
             return;
         }
@@ -116,14 +117,55 @@ public class ChunkMeshGenerator : MonoBehaviour
 
     #region Tools
 
-    private HexType GetHexagonAtPosition(Vector3Int pos)
+    private HexType GetHexagonAtPosition(Vector3Int hexPos)
     {
-        return IsOutsideChunk(pos) ? HexType.Void : _hexagons[pos.x, pos.y, pos.z];
+        if (IsInsideChunk(hexPos))
+        {
+            return _chunkData.hexagons[hexPos.x, hexPos.y, hexPos.z];
+        }
+
+        if (IsOutsideChunkHeight(hexPos))
+        {
+            return HexType.Void;
+        }
+
+        Vector2Int adjChunkPosition = _chunkData.chunkPosition;
+
+        if (hexPos.x < 0)
+        {
+            adjChunkPosition.x--;
+            hexPos.x += ChunkSize.x;
+        }
+        else if (hexPos.x >= ChunkSize.x)
+        {
+            adjChunkPosition.x++;
+            hexPos.x -= ChunkSize.x;
+        }
+
+        if (hexPos.z < 0)
+        {
+            adjChunkPosition.y--;
+            hexPos.z += ChunkSize.z;
+        }
+        else if (hexPos.z >= ChunkSize.z)
+        {
+            adjChunkPosition.y++;
+            hexPos.z -= ChunkSize.z;
+        }
+
+        if (WorldGenerator.Instance.terrain.TryGetValue(adjChunkPosition, out ChunkData adjChunk))
+        {
+            return adjChunk.hexagons[hexPos.x, hexPos.y, hexPos.z];
+        }
+
+        return HexType.Void;
     }
 
-    private bool IsOutsideChunk(Vector3Int pos) => pos.x < 0 || pos.x >= ChunkSize.x ||
-                                                   pos.y < 0 || pos.y >= ChunkSize.y ||
-                                                   pos.z < 0 || pos.z >= ChunkSize.z;
+    private bool IsInsideChunk(Vector3Int pos) => pos.x >= 0 && pos.x < ChunkSize.x &&
+                                                  pos.y >= 0 && pos.y < ChunkSize.y &&
+                                                  pos.z >= 0 && pos.z < ChunkSize.z;
+
+    private bool IsOutsideChunkHeight(Vector3Int pos) => pos.y < 0 || pos.y >= ChunkSize.y;
 
     #endregion
 }

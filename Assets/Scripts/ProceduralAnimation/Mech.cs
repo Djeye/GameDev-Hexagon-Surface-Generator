@@ -18,13 +18,13 @@ namespace ProceduralAnimation
         [Serializable]
         private struct LegData
         {
-            public LegTarget Leg { get; private set; }
-            public LegRaycast Raycast  { get; private set; }
+            public LegTarget leg;
+            public LegRaycast raycast;
 
             public void Init(float stepSpeed, float stepHeight, AnimationCurve stepCurve, Transform parentTransform)
             {
-                Leg.Init(stepSpeed, stepHeight, stepCurve);
-                Raycast.Init(parentTransform);
+                leg.Init(stepSpeed, stepHeight, stepCurve);
+                raycast.Init(parentTransform);
             }
         }
 
@@ -47,13 +47,13 @@ namespace ProceduralAnimation
                     continue;
                 }
 
-                if (!legData.Leg.IsMoving &&
-                    !(Vector3.Distance(legData.Leg.Position, legData.Raycast.Position) > stepLength))
+                if (!legData.leg.IsMoving &&
+                    !(Vector3.Distance(legData.leg.Position, legData.raycast.Position) > stepLength))
                 {
                     continue;
                 }
 
-                legData.Leg.MoveTo(legData.Raycast.Position);
+                legData.leg.MoveTo(legData.raycast.Position);
             }
         }
 
@@ -66,7 +66,7 @@ namespace ProceduralAnimation
             LegData prevLeg = legs[prevLegIndex];
             LegData nextLeg = legs[nextLegIndex];
 
-            return !prevLeg.Leg.IsMoving && !nextLeg.Leg.IsMoving;
+            return !prevLeg.leg.IsMoving && !nextLeg.leg.IsMoving;
         }
     }
 }
