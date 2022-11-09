@@ -11,9 +11,9 @@ public static class TerrainGenerator
 
         var result = new HexType[chunkSizeX, chunkSizeY, chunkSizeZ];
 
-        Vector2Int chunkSize2D = new Vector2Int(chunkSizeX, chunkSizeZ);
+        Vector2Int chunk2DSize = new Vector2Int(chunkSizeX, chunkSizeZ);
 
-        Iterations.Iterate(GenerateHexagonTerrain, chunkSize2D);
+        Iterations.Iterate(GenerateHexagonTerrain, chunk2DSize);
 
         return result;
 

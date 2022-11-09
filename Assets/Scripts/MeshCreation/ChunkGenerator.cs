@@ -3,7 +3,7 @@ using Tools;
 using UnityEngine;
 
 [RequireComponent(typeof(MeshRenderer), typeof(MeshFilter), typeof(MeshCollider))]
-public class ChunkMeshGenerator : MonoBehaviour
+public class ChunkGenerator : MonoBehaviour
 {
     private ChunkData _chunkData;
 
@@ -23,22 +23,28 @@ public class ChunkMeshGenerator : MonoBehaviour
     {
         _meshFilter = GetComponent<MeshFilter>();
         _meshCollider = GetComponent<MeshCollider>();
-
-        //_hexagons = new HexType[ChunkSize.x, ChunkSize.y, ChunkSize.z];
     }
 
 
-    public void GenerateChunk(ChunkData chunkData)
+    public void Init(ChunkData chunkData)
     {
         _chunkData = chunkData;
+    }
 
+    public void RegenerateChunk()
+    {
         GenerateSurface();
         ApplyMesh();
     }
 
+
     private void GenerateSurface()
     {
         _chunkMesh = new Mesh();
+
+        _triangles.Clear();
+        _verticies.Clear();
+
         Iterations.Iterate(GenerateHexagon, ChunkSize);
     }
 
@@ -59,29 +65,29 @@ public class ChunkMeshGenerator : MonoBehaviour
     {
         Vector3Int hexGridPosition = new Vector3Int(x, y, z);
 
-        if (GetHexagonAtPosition(hexGridPosition) == HexType.Void)
+        if (GetHexAtPosition(hexGridPosition) == HexType.Void)
         {
             return;
         }
 
-        Vector3 hexPosition = HexInfo.ConvertToHexagonAxis(x, y, z);
+        Vector3 hexPosition = HexInfo.GetWorldCoords(hexGridPosition);
 
         GenerateFlatHex(HexInfo.Sides.Top, hexGridPosition, hexPosition);
         GenerateFlatHex(HexInfo.Sides.Bottom, hexGridPosition, hexPosition);
         ConnectSidesTriangles(hexGridPosition);
     }
 
-    private void GenerateFlatHex(HexInfo.Sides side, Vector3Int blockPosition, Vector3 position)
+    private void GenerateFlatHex(HexInfo.Sides side, Vector3Int gridPosition, Vector3 position)
     {
         CreateVertecies(side, position);
-        TryConnectTriangles(side, blockPosition + HexInfo.FLAT_NORMALS[side], FlatOffset);
+        TryConnectTriangles(side, gridPosition + HexInfo.FLAT_NORMALS[side], FlatOffset);
     }
 
-    private void ConnectSidesTriangles(Vector3Int blockPosition)
+    private void ConnectSidesTriangles(Vector3Int gridPosition)
     {
         foreach (var sideNeighbors in HexInfo.HEX_SIDE_NEIGHBORS)
         {
-            TryConnectTriangles(sideNeighbors.Key, blockPosition + sideNeighbors.Value, SidesOffset);
+            TryConnectTriangles(sideNeighbors.Key, gridPosition + sideNeighbors.Value, SidesOffset);
         }
     }
 
@@ -96,7 +102,7 @@ public class ChunkMeshGenerator : MonoBehaviour
 
     private void TryConnectTriangles(HexInfo.Sides side, Vector3Int neighborPosition, int offset)
     {
-        if (GetHexagonAtPosition(neighborPosition) != HexType.Void)
+        if (GetHexAtPosition(neighborPosition) != HexType.Void)
         {
             return;
         }
@@ -117,11 +123,35 @@ public class ChunkMeshGenerator : MonoBehaviour
 
     #region Tools
 
-    private HexType GetHexagonAtPosition(Vector3Int hexPos)
+    public void ChangeHexTypeAtPosition(Vector3Int hexPos, HexType hexType)
+    {
+        _chunkData.SetHexType(hexPos, hexType);
+
+        foreach (Vector3Int neighbor in HexInfo.HEX_SIDE_NEIGHBORS.Values)
+        {
+            Vector3Int neighborHexPos = hexPos + neighbor;
+
+            if (IsInsideChunk(neighborHexPos))
+            {
+                continue;
+            }
+
+            Vector2Int adjChunkPosition = GetAdjChunk(neighborHexPos);
+
+            if (WorldGenerator.Instance.terrain.TryGetValue(adjChunkPosition, out ChunkData adjChunkData))
+            {
+                adjChunkData.chunkGenerator.RegenerateChunk();
+            }
+        }
+
+        RegenerateChunk();
+    }
+
+    private HexType GetHexAtPosition(Vector3Int hexPos)
     {
         if (IsInsideChunk(hexPos))
         {
-            return _chunkData.hexagons[hexPos.x, hexPos.y, hexPos.z];
+            return _chunkData.GetHexByPos(hexPos);
         }
 
         if (IsOutsideChunkHeight(hexPos))
@@ -129,37 +159,51 @@ public class ChunkMeshGenerator : MonoBehaviour
             return HexType.Void;
         }
 
-        Vector2Int adjChunkPosition = _chunkData.chunkPosition;
-
-        if (hexPos.x < 0)
-        {
-            adjChunkPosition.x--;
-            hexPos.x += ChunkSize.x;
-        }
-        else if (hexPos.x >= ChunkSize.x)
-        {
-            adjChunkPosition.x++;
-            hexPos.x -= ChunkSize.x;
-        }
-
-        if (hexPos.z < 0)
-        {
-            adjChunkPosition.y--;
-            hexPos.z += ChunkSize.z;
-        }
-        else if (hexPos.z >= ChunkSize.z)
-        {
-            adjChunkPosition.y++;
-            hexPos.z -= ChunkSize.z;
-        }
+        Vector2Int adjChunkPosition = GetAdjChunk(hexPos, out Vector3Int adjHexPos);
 
         if (WorldGenerator.Instance.terrain.TryGetValue(adjChunkPosition, out ChunkData adjChunk))
         {
-            return adjChunk.hexagons[hexPos.x, hexPos.y, hexPos.z];
+            return adjChunk.GetHexByPos(adjHexPos);
         }
 
         return HexType.Void;
     }
+
+    private Vector2Int GetAdjChunk(Vector3Int hexPos, out Vector3Int adjHexPos)
+    {
+        Vector2Int adjChunkPosition = _chunkData.chunkPosition;
+        adjHexPos = hexPos;
+
+        if (adjHexPos.x < 0)
+        {
+            adjChunkPosition.x--;
+            adjHexPos.x += ChunkSize.x;
+        }
+        else if (adjHexPos.x >= ChunkSize.x)
+        {
+            adjChunkPosition.x++;
+            adjHexPos.x -= ChunkSize.x;
+        }
+
+        if (adjHexPos.z < 0)
+        {
+            adjChunkPosition.y--;
+            adjHexPos.z += ChunkSize.z;
+        }
+        else if (adjHexPos.z >= ChunkSize.z)
+        {
+            adjChunkPosition.y++;
+            adjHexPos.z -= ChunkSize.z;
+        }
+
+        return adjChunkPosition;
+    }
+
+    private Vector2Int GetAdjChunk(Vector3Int hexPos)
+    {
+        return GetAdjChunk(hexPos, out Vector3Int _);
+    }
+
 
     private bool IsInsideChunk(Vector3Int pos) => pos.x >= 0 && pos.x < ChunkSize.x &&
                                                   pos.y >= 0 && pos.y < ChunkSize.y &&

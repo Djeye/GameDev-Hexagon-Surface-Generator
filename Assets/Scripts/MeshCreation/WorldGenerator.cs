@@ -5,7 +5,7 @@ using UnityEngine;
 public class WorldGenerator : MonoBehaviour
 {
     [Header("Prefabs")]
-    [SerializeField] private ChunkMeshGenerator chunkMeshGenerator;
+    [SerializeField] private ChunkGenerator chunkGenerator;
 
     [Header("Hexagon Info")]
     [SerializeField] private float hexagonSize = 0.57735f;
@@ -21,11 +21,11 @@ public class WorldGenerator : MonoBehaviour
     public float HexagonHeight => hexagonHeight != 0 ? hexagonHeight : HexInfo.HEX_DEF_HEIGHT;
     public Vector3Int ChunkSize => chunkSize;
 
-
     public readonly Dictionary<Vector2Int, ChunkData> terrain = new Dictionary<Vector2Int, ChunkData>();
 
     private Transform _transform;
     private Vector3 _position;
+    private Camera _cam;
 
 
     private void Awake()
@@ -36,38 +36,89 @@ public class WorldGenerator : MonoBehaviour
         }
 
         Instance = this;
-        
+
         _transform = transform;
         _position = transform.position;
+        _cam = Camera.main;
     }
 
     private void Start()
     {
-        Iterations.Iterate(GenerateTerrain, chunkGridSize);
-        Iterations.Iterate(GenerateChunk, chunkGridSize);
+        Iterations.Iterate(InitializeTerrain, chunkGridSize);
+        GenerateTerrain();
     }
 
-    private void GenerateTerrain(int chunkX, int chunkY)
+    private void Update()
+    {
+        InteractWithHexes();
+    }
+
+
+    private void InitializeTerrain(int chunkX, int chunkY)
     {
         Vector2Int chunkIndex = new Vector2Int(chunkX, chunkY);
         HexType[,,] chunkTerrain = TerrainGenerator.GenerateChunkTerrain(chunkSize, chunkIndex);
 
-        ChunkData chunkData = new ChunkData(chunkIndex, chunkTerrain);
+        Vector3 chunkOffset = HexInfo.GetWorldCoords(chunkX * chunkSize.x, 0, chunkY * chunkSize.z);
+        ChunkGenerator chunk = Instantiate(chunkGenerator, _position + chunkOffset, Quaternion.identity, _transform);
+
+        ChunkData chunkData = new ChunkData(chunkIndex, chunkTerrain, chunk);
+        
         terrain.Add(chunkIndex, chunkData);
     }
 
-    private void GenerateChunk(int chunkX, int chunkY)
+    private void GenerateTerrain()
     {
-        Vector2Int chunkIndex = new Vector2Int(chunkX, chunkY);
+        foreach (ChunkData value in terrain.Values)
+        {
+            value.chunkGenerator.RegenerateChunk();
+        }
+    }
 
-        float xOffset = (chunkX * chunkSize.x + chunkY * chunkSize.z * 0.5f) * hexagonSize * HexInfo.SQRT3;
-        float zOffset = chunkY * hexagonSize * chunkSize.z * 1.5f;
+    private void InteractWithHexes()
+    {
+        if (!InputController.Instance.IsMouseButtonPressed)
+        {
+            return;
+        }
 
-        Vector3 posOffset = new Vector3(xOffset, 0, zOffset);
+        Ray cameraRay = _cam.ViewportPointToRay(InputController.SCREEN_CENTRE);
 
-        ChunkMeshGenerator chunk = Instantiate(chunkMeshGenerator, _position + posOffset, Quaternion.identity,
-            _transform);
+        if (!Physics.Raycast(cameraRay, out RaycastHit hitInfo))
+        {
+            return;
+        }
 
-        chunk.GenerateChunk(terrain[chunkIndex]);
+        bool isDestroying = InputController.Instance.buttonPressed[InputController.InputType.MouseLeft];
+        int multiplier = isDestroying ? -1 : 1;
+
+        Vector3 hexCentrePoint = HexInfo.FLAT_NORMALS.ContainsValue(Vector3Int.RoundToInt(hitInfo.normal))
+            ? hitInfo.point + multiplier * hitInfo.normal * hexagonHeight / 2f
+            : hitInfo.point + multiplier * hitInfo.normal * hexagonSize;
+
+        Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(hexCentrePoint);
+        Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
+
+        if (!terrain.TryGetValue(chunkPos, out ChunkData chunkData))
+        {
+            return;
+        }
+
+        Vector3Int hexPos = GetHexPositionInChunk(hexLocalPos);
+
+        chunkData.chunkGenerator.ChangeHexTypeAtPosition(hexPos, isDestroying ? HexType.Void : HexType.Dirt);
+    }
+
+    private Vector2Int GetChunkByHexPosition(Vector3Int hexLocalCoords)
+    {
+        return new Vector2Int(hexLocalCoords.x / chunkSize.x, hexLocalCoords.z / chunkSize.y);
+    }
+
+    private Vector3Int GetHexPositionInChunk(Vector3Int hexLocalCoords)
+    {
+        Vector2Int chunkPos = GetChunkByHexPosition(hexLocalCoords);
+        Vector3Int chunkPos3D = new Vector3Int(chunkPos.x, 0, chunkPos.y);
+
+        return hexLocalCoords - chunkPos3D * chunkSize;
     }
 }

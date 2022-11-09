@@ -1,25 +1,27 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-
 public static class HexInfo
 {
     public const int HEX_VERTECIES = 6;
     public const float HEX_DEF_SIZE = 0.57735f; // 1 / sqrt(3)
     public const float HEX_DEF_HEIGHT = 1f;
 
-    public const float SQRT3 = 1.73205f; // sqrt(3)
+    private const float SQRT3 = 1.73205f; // sqrt(3)
 
-    private static readonly float _hexHeight = 2f * HexRadius;
-    private static readonly float _hexWidth = SQRT3 * HexRadius;
+    private static readonly float _hexWidth = SQRT3 * HexSize;
+    private static readonly float _hexHeight = 2f * HexSize;
 
-    private static readonly float _hexHorizontalOffset = 0.5f * _hexWidth;
-    private static readonly float _hexHorizontalShift = _hexWidth;
-    private static readonly float _hexHeightShift = HexagonHeight;
-    private static readonly float _hexVerticalShift = 3 / 4f * _hexHeight;
+    public static readonly float HEX_HORIZONTAL_SHIFT = 0.5f * _hexWidth;
+    public static readonly float HEX_HORIZONTAL_OFFSET = _hexWidth;
+    public static readonly float HEX_VERTICAL_OFFSET = 3 / 4f * _hexHeight;
 
-    private static float HexRadius => WorldGenerator.Instance.HexagonSize;
+    private static readonly float _hexHeightOffset = HexagonHeight;
+    private static readonly float _hexHeightHalfOffset = _hexHeightOffset * 0.5f;
+
+    private static float HexSize => WorldGenerator.Instance.HexagonSize;
     private static float HexagonHeight => WorldGenerator.Instance.HexagonHeight;
+
 
     public enum Sides : byte
     {
@@ -35,8 +37,8 @@ public static class HexInfo
 
     public static readonly Dictionary<Sides, Vector3> FLAT_OFFSET = new Dictionary<Sides, Vector3>()
     {
-        {Sides.Top, Vector3.zero},
-        {Sides.Bottom, _hexHeightShift * Vector3.down}
+        {Sides.Top, _hexHeightHalfOffset * Vector3.up},
+        {Sides.Bottom, _hexHeightHalfOffset * Vector3.down}
     };
 
     public static readonly Dictionary<Sides, Vector3Int> FLAT_NORMALS = new Dictionary<Sides, Vector3Int>()
@@ -132,26 +134,36 @@ public static class HexInfo
             {Sides.RightFront, new Vector3Int(1, 0, -1)}
         };
 
-    public static Vector3 ConvertToHexagonAxis(int x, int y, int z)
+    public static Vector3 GetWorldCoords(Vector3Int pos)
     {
-        float hexX = x * _hexHorizontalShift + z * _hexHorizontalOffset;
-        float hexY = y * _hexHeightShift;
-        float hexZ = z * _hexVerticalShift;
+        return GetWorldCoords(pos.x, pos.y, pos.z);
+    }
+
+    public static Vector3 GetWorldCoords(int x, int y, int z)
+    {
+        float hexX = x * HEX_HORIZONTAL_OFFSET + z * HEX_HORIZONTAL_SHIFT;
+        float hexY = y * _hexHeightOffset;
+        float hexZ = z * HEX_VERTICAL_OFFSET;
 
         return new Vector3(hexX, hexY, hexZ);
     }
 
-    public static Vector3Int ConvertToCommonAxis(float hexX, float hexY, float hexZ)
+    public static Vector3Int GetHexagonCoords(Vector3 pos)
     {
-        float dirtyZ = hexZ / _hexVerticalShift;
+        return GetHexagonCoords(pos.x, pos.y, pos.z);
+    }
 
-        int x = (int)((hexX - dirtyZ * _hexHorizontalOffset) / _hexHorizontalShift);
-        int z = (int)dirtyZ;
-        int y = (int)(hexY / _hexHeightShift);
+    public static Vector3Int GetHexagonCoords(float hexX, float hexY, float hexZ)
+    {
+        float dirtyZ = hexZ / HEX_VERTICAL_OFFSET;
+
+        int x = Mathf.RoundToInt((hexX - dirtyZ * HEX_HORIZONTAL_SHIFT) / HEX_HORIZONTAL_OFFSET);
+        int y = Mathf.RoundToInt(hexY / _hexHeightOffset);
+        int z = Mathf.RoundToInt(dirtyZ);
 
         return new Vector3Int(x, y, z);
     }
-
+    
     public static bool IsOutsideCircle(int radius, int r, int q)
     {
         int innerRange = radius - 1;

@@ -8,10 +8,10 @@ namespace ProceduralAnimation
         private AnimationCurve _stepCurve;
 
         private Transform _transform;
-        private Vector3 _position;
         private Movement? _movement;
 
-        public Vector3 Position => _position;
+        public Vector3 Position { get; private set; }
+
         public bool IsMoving => _movement != null;
 
 
@@ -22,16 +22,7 @@ namespace ProceduralAnimation
 
         private void Update()
         {
-            if (_movement != null)
-            {
-                Movement m = _movement.Value;
-
-                m.progress = Mathf.Clamp01(m.progress + Time.deltaTime * _stepSpeed);
-                _position = m.Evaluate(Vector3.up, _stepHeight, _stepCurve);
-                _movement = m.progress < 1 ? m : null;
-            }
-
-            _transform.position = _position;
+            Moving();
         }
 
 
@@ -43,11 +34,25 @@ namespace ProceduralAnimation
             _stepCurve = stepCurve;
         }
 
+        private void Moving()
+        {
+            if (_movement != null)
+            {
+                Movement m = _movement.Value;
+
+                m.progress = Mathf.Clamp01(m.progress + Time.deltaTime * _stepSpeed);
+                Position = m.Evaluate(Vector3.up, _stepHeight, _stepCurve);
+                _movement = m.progress < 1 ? m : null;
+            }
+
+            _transform.position = Position;
+        }
+
         public void MoveTo(Vector3 targetPosition)
         {
             _movement = _movement != null
                 ? new Movement(_movement.Value.progress, _movement.Value.fromPosition, targetPosition)
-                : new Movement(0f, _position, targetPosition);
+                : new Movement(0f, Position, targetPosition);
         }
 
         private struct Movement
@@ -55,7 +60,7 @@ namespace ProceduralAnimation
             public float progress;
             public readonly Vector3 fromPosition;
             private readonly Vector3 _toPosition;
-            
+
             public Movement(float progress, Vector3 fromPosition, Vector3 toPosition)
             {
                 this.progress = progress;
