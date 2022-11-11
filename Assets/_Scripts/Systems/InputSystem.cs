@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Utilities;
 
-public class InputController : MonoBehaviour
+public class InputSystem : Singleton<InputSystem>
 {
     public static readonly Vector2 SCREEN_CENTRE = new Vector2(0.5f, 0.5f);
 
@@ -15,20 +16,7 @@ public class InputController : MonoBehaviour
 
     public bool IsMoving => MoveVector.magnitude >= 0.1f;
     public bool IsMouseButtonPressed => buttonPressed.Values.Any(pressed => pressed);
-    
-    public static InputController Instance { get; private set; }
 
-
-    private void Awake()
-    {
-        if (Instance != null)
-        {
-            return;
-        }
-
-        Instance = this;
-        DontDestroyOnLoad(this);
-    }
 
     private void Update()
     {

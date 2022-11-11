@@ -78,12 +78,12 @@ namespace ProceduralAnimation
 
         private void Moving()
         {
-            if (!InputController.Instance.IsMoving)
+            if (!InputSystem.Instance.IsMoving)
             {
                 return;
             }
 
-            Vector2 moveVector = InputController.Instance.MoveVector;
+            Vector2 moveVector = InputSystem.Instance.MoveVector;
             float targetAngle = Mathf.Atan2(moveVector.x, moveVector.y) * Mathf.Rad2Deg + _cam.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(_transform.eulerAngles.y, targetAngle, ref _angleVelocity,
                 turnSmoothTime);
