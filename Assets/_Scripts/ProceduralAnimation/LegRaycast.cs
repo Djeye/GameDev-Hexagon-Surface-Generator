@@ -25,7 +25,6 @@ namespace ProceduralAnimation
             ApplyRayCast();
         }
 
-
         public void Init(Transform parentTransform, float moveImpact)
         {
             _parentTransform = parentTransform;

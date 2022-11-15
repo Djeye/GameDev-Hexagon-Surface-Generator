@@ -5,7 +5,14 @@ namespace Utilities
     public abstract class StaticInstance<T> : MonoBehaviour where T : MonoBehaviour
     {
         public static T Instance { get; private set; }
-        protected virtual void Awake() => Instance = this as T;
+        // ReSharper disable once InconsistentNaming
+        protected Transform _transform;
+
+        protected virtual void Awake()
+        {
+            Instance = this as T;
+            _transform = transform;
+        }
 
         protected virtual void OnApplicationQuit()
         {
@@ -22,6 +29,7 @@ namespace Utilities
             if (Instance != null)
             {
                 Destroy(gameObject);
+                return;
             }
 
             base.Awake();

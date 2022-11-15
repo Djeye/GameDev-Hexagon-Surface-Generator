@@ -8,12 +8,7 @@ namespace ProceduralAnimation
     {
         [Header("Legs Data")]
         [SerializeField] private LegData[] legs;
-
-        [Space]
-        [Header("Player parameters")]
-        [SerializeField] private float speed;
-        [SerializeField] private float turnSmoothTime;
-
+        
         [Space]
         [Header("Legs parameters")]
         [SerializeField] private float stepSpeed = 0.5f;
@@ -25,48 +20,21 @@ namespace ProceduralAnimation
         [Serializable]
         private struct LegData
         {
-            public LegTarget leg;
-            public LegRaycast raycast;
+            [field: SerializeField] public LegTarget Leg { get; private set; }
+            [field: SerializeField] public LegRaycast Raycast { get; private set; }
 
             public void Init(float stepSpeed, float stepHeight, AnimationCurve stepCurve, Transform parentTransform, float moveImpact)
             {
-                leg.Init(stepSpeed, stepHeight, stepCurve);
-                raycast.Init(parentTransform, moveImpact);
+                Leg.Init(stepSpeed, stepHeight, stepCurve);
+                Raycast.Init(parentTransform, moveImpact);
             }
         }
 
-        private CharacterController _controller;
-        private Transform _transform;
-        private Transform _cam;
-
-        private float _angleVelocity;
-        private Vector3 _moveDirection;
-
-
-        private void Awake()
-        {
-            _controller = GetComponent<CharacterController>();
-            _transform = GetComponent<Transform>();
-
-            if (Camera.main != null)
-            {
-                _cam = Camera.main.transform;
-            }
-        }
 
         private void Start()
         {
-            Cursor.lockState = CursorLockMode.Locked;
-
             InitLegs();
         }
-
-        private void Update()
-        {
-            Moving();
-            MoveLegs();
-        }
-
 
         private void InitLegs()
         {
@@ -76,59 +44,26 @@ namespace ProceduralAnimation
             }
         }
 
-        private void Moving()
-        {
-            if (!InputSystem.Instance.IsMoving)
-            {
-                return;
-            }
-
-            Vector2 moveVector = InputSystem.Instance.MoveVector;
-            float targetAngle = Mathf.Atan2(moveVector.x, moveVector.y) * Mathf.Rad2Deg + _cam.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(_transform.eulerAngles.y, targetAngle, ref _angleVelocity,
-                turnSmoothTime);
-            _moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-
-            ApplyGravity();
-            ApplyMovement(angle, _moveDirection);
-        }
-
-        private void MoveLegs()
+        public void UpdateLegs(Vector3 moveDirection)
         {
             for (int index = 0; index < legs.Length; index++)
             {
                 var legData = legs[index];
-                legData.raycast.ApplyMoveDirection(_moveDirection);
+                legData.Raycast.ApplyMoveDirection(moveDirection);
                 
                 if (!CanMove(index))
                 {
                     continue;
                 }
 
-                if (!legData.leg.IsMoving &&
-                    !(Vector3.Distance(legData.leg.Position, legData.raycast.Position) > stepLength))
+                if (!legData.Leg.IsMoving &&
+                    !(Vector3.Distance(legData.Leg.Position, legData.Raycast.Position) > stepLength))
                 {
                     continue;
                 }
 
-                legData.leg.MoveTo(legData.raycast.Position);
+                legData.Leg.MoveTo(legData.Raycast.Position);
             }
-        }
-
-        private void ApplyGravity()
-        {
-            if (_controller.isGrounded)
-            {
-                return;
-            }
-
-            _moveDirection += Physics.gravity;
-        }
-
-        private void ApplyMovement(float angle, Vector3 moveDirection)
-        {
-            _transform.rotation = Quaternion.Euler(0f, angle, 0f);
-            _controller.Move(Time.deltaTime * speed * moveDirection.normalized);
         }
 
         private bool CanMove(int legIndex)
@@ -140,7 +75,7 @@ namespace ProceduralAnimation
             LegData prevLeg = legs[prevLegIndex];
             LegData nextLeg = legs[nextLegIndex];
 
-            return !prevLeg.leg.IsMoving && !nextLeg.leg.IsMoving;
+            return !prevLeg.Leg.IsMoving && !nextLeg.Leg.IsMoving;
         }
     }
 }
