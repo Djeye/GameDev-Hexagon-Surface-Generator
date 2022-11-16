@@ -4,55 +4,77 @@ namespace ProceduralAnimation
 {
     public class LegTarget : MonoBehaviour
     {
-        private float _stepSpeed, _stepHeight;
-        private AnimationCurve _stepCurve;
-
-        private Transform _transform;
-        private Movement? _movement;
-
-        public Vector3 Position { get; private set; }
+        [SerializeField] private Transform raycastPoint;
 
         public bool IsMoving => _movement != null;
+        private bool IsStepAllowed => Vector3.Distance(Position, RayPosition) > _legInfo.stepLength;
+        public bool IsPossibleToMove => IsMoving || IsStepAllowed;
+
+
+        private Vector3 Position { get; set; }
+        private Vector3 RayPosition => _hit.point;
+        private Vector3 ParentUp => _parentTransform.up;
+
+
+        private Mech.LegInfo _legInfo;
+
+        private Transform _legTransform;
+        private Transform _parentTransform;
+
+        private Movement? _movement;
+        private RaycastHit _hit;
+
+        private Vector3 _moveDirection;
 
 
         private void Awake()
         {
-            _transform = transform;
+            _legTransform = transform;
         }
 
         private void Update()
         {
-            Moving();
+            ApplyRayCast();
+            MoveLeg();
         }
 
 
-        public void Init(float stepSpeed, float stepHeight, AnimationCurve stepCurve)
+        public void Init(Mech.LegInfo legInfo, Transform parentTransform)
         {
-            _stepSpeed = stepSpeed;
-            _stepHeight = stepHeight;
-
-            _stepCurve = stepCurve;
+            _legInfo = legInfo;
+            _parentTransform = parentTransform;
         }
 
-        private void Moving()
+        private void ApplyRayCast()
+        {
+            Ray ray = new Ray(raycastPoint.position + _moveDirection, -ParentUp);
+            Physics.Raycast(ray, out _hit);
+        }
+
+        private void MoveLeg()
         {
             if (_movement != null)
             {
                 Movement m = _movement.Value;
 
-                m.progress = Mathf.Clamp01(m.progress + Time.deltaTime * _stepSpeed);
-                Position = m.Evaluate(Vector3.up, _stepHeight, _stepCurve);
+                m.progress = Mathf.Clamp01(m.progress + Time.deltaTime * _legInfo.stepSpeed);
+                Position = m.Evaluate(ParentUp, _legInfo.stepHeight, _legInfo.stepCurve);
                 _movement = m.progress < 1 ? m : null;
             }
 
-            _transform.position = Position;
+            _legTransform.position = Position;
         }
 
-        public void MoveTo(Vector3 targetPosition)
+        public void ApplyMoveDirection(Vector3 moveDirection)
+        {
+            _moveDirection = new Vector3(moveDirection.x * _legInfo.moveImpact, 0, moveDirection.z * _legInfo.moveImpact);
+        }
+
+        public void Move()
         {
             _movement = _movement != null
-                ? new Movement(_movement.Value.progress, _movement.Value.fromPosition, targetPosition)
-                : new Movement(0f, Position, targetPosition);
+                ? new Movement(_movement.Value.progress, _movement.Value.fromPosition, RayPosition)
+                : new Movement(0f, Position, RayPosition);
         }
 
         private struct Movement

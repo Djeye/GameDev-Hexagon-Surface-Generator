@@ -3,79 +3,64 @@ using UnityEngine;
 
 namespace ProceduralAnimation
 {
-    [RequireComponent(typeof(CharacterController))]
     public class Mech : MonoBehaviour
     {
         [Header("Legs Data")]
-        [SerializeField] private LegData[] legs;
-        
-        [Space]
-        [Header("Legs parameters")]
-        [SerializeField] private float stepSpeed = 0.5f;
-        [SerializeField] private float stepLength = 0.75f;
-        [SerializeField] private float stepHeight = 0.25f;
-        [SerializeField] private float stepMoveImpact = 0.5f;
-        [SerializeField] private AnimationCurve stepCurve;
+        [SerializeField] private LegTarget[] legs;
+
+        [Space] [Header("Legs parameters")]
+        [SerializeField] private LegInfo legInfo;
 
         [Serializable]
-        private struct LegData
+        public struct LegInfo
         {
-            [field: SerializeField] public LegTarget Leg { get; private set; }
-            [field: SerializeField] public LegRaycast Raycast { get; private set; }
+            public float stepSpeed;
+            public float stepLength;
+            public float stepHeight;
+            public float moveImpact;
+            public AnimationCurve stepCurve;
+        }
 
-            public void Init(float stepSpeed, float stepHeight, AnimationCurve stepCurve, Transform parentTransform, float moveImpact)
+        public void InitLegs(Transform transform)
+        {
+            foreach (LegTarget leg in legs)
             {
-                Leg.Init(stepSpeed, stepHeight, stepCurve);
-                Raycast.Init(parentTransform, moveImpact);
+                leg.Init(legInfo, transform);
             }
         }
 
-
-        private void Start()
-        {
-            InitLegs();
-        }
-
-        private void InitLegs()
-        {
-            foreach (var legData in legs)
-            {
-                legData.Init(stepSpeed, stepHeight, stepCurve, transform, stepMoveImpact);
-            }
-        }
-
-        public void UpdateLegs(Vector3 moveDirection)
+        public void UpdateLegsMovement(Vector3 moveDirection)
         {
             for (int index = 0; index < legs.Length; index++)
             {
-                var legData = legs[index];
-                legData.Raycast.ApplyMoveDirection(moveDirection);
+                LegTarget leg = legs[index];
                 
-                if (!CanMove(index))
+                if (!CanMoveByAdjLegs(index))
                 {
                     continue;
                 }
 
-                if (!legData.Leg.IsMoving &&
-                    !(Vector3.Distance(legData.Leg.Position, legData.Raycast.Position) > stepLength))
+                leg.ApplyMoveDirection(moveDirection);
+                
+                if (!leg.IsPossibleToMove)
                 {
                     continue;
                 }
 
-                legData.Leg.MoveTo(legData.Raycast.Position);
+                leg.Move();
             }
-        }
 
-        private bool CanMove(int legIndex)
-        {
-            int legsCount = legs.Length;
-            int prevLegIndex = (legIndex + legsCount - 1) % legsCount;
-            int nextLegIndex = (legIndex + 1) % legsCount;
+            bool CanMoveByAdjLegs(int legIndex)
+            {
+                int legsCount = legs.Length;
+                int prevLegIndex = (legIndex + legsCount - 1) % legsCount;
+                int nextLegIndex = (legIndex + 1) % legsCount;
 
-            LegData prevLeg = legs[prevLegIndex];
-            LegData nextLeg = legs[nextLegIndex];
+                LegTarget prevLeg = legs[prevLegIndex];
+                LegTarget nextLeg = legs[nextLegIndex];
 
-            return !prevLeg.Leg.IsMoving && !nextLeg.Leg.IsMoving;
+                return !prevLeg.IsMoving && !nextLeg.IsMoving;
+            }
         }
     }
 }

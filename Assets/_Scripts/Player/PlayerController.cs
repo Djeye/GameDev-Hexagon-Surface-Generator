@@ -4,12 +4,14 @@ using UnityEngine;
 
 namespace Player
 {
+    [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
     {
         [SerializeField] private Mech mech;
 
         [Space]
         [SerializeField] private float speed;
+        [SerializeField] private float fallSpeed;
         [SerializeField] private float turnSmoothTime;
 
         private CharacterController _controller;
@@ -19,7 +21,7 @@ namespace Player
         private Camera _cam;
 
         private float _angleVelocity;
-        private Vector3 _moveDirection;
+
 
         private void Awake()
         {
@@ -36,36 +38,52 @@ namespace Player
         {
             Cursor.lockState = CursorLockMode.Locked;
 
+            mech.InitLegs(_transform);
             _hexInteractor = new HexInteractor(_cam);
         }
 
         private void Update()
         {
-            Moving();
-            mech.UpdateLegs(Vector3.zero);
+            Moving(out Vector3 moveDirection);
+            mech.UpdateLegsMovement(moveDirection);
             _hexInteractor.Update();
         }
 
-        private void Moving()
+
+        private void Moving(out Vector3 moveDirection)
         {
+            ApplyGravity();
+
             if (!InputSystem.Instance.IsMoving)
+            {
+                moveDirection = Vector3.zero;
+                return;
+            }
+
+            moveDirection = CalculateMoveDirection(out float angle);
+
+            _transform.rotation = Quaternion.Euler(0f, angle, 0f);
+            _controller.Move(speed * Time.deltaTime * moveDirection);
+        }
+
+        private void ApplyGravity()
+        {
+            if (_controller.isGrounded)
             {
                 return;
             }
 
+            _controller.Move(fallSpeed * Time.deltaTime * Physics.gravity);
+        }
+
+        private Vector3 CalculateMoveDirection(out float angle)
+        {
             Vector2 moveVector = InputSystem.Instance.MoveVector;
+
             float targetAngle = Mathf.Atan2(moveVector.x, moveVector.y) * Mathf.Rad2Deg + _cam.transform.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(_transform.eulerAngles.y, targetAngle, ref _angleVelocity,
-                turnSmoothTime);
-            var moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
+            angle = Mathf.SmoothDampAngle(_transform.eulerAngles.y, targetAngle, ref _angleVelocity, turnSmoothTime);
 
-            // if (!_controller.isGrounded)
-            // {
-            //     moveDirection += Physics.gravity;
-            // }
-
-            _transform.rotation = Quaternion.Euler(0f, angle, 0f);
-            _controller.Move(Time.deltaTime * speed * moveDirection.normalized);
+            return (Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward).normalized;
         }
     }
 }
