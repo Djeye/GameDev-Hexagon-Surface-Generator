@@ -19,7 +19,7 @@ namespace MeshCreation
         public static readonly float HEX_VERTICAL_OFFSET = 3 / 4f * _hexHeight;
 
         private static readonly float _hexHeightOffset = HexagonHeight;
-        private static readonly float _hexHeightHalfOffset = _hexHeightOffset * 0.5f;
+        private static readonly float _hexHeightHalfOffset = HexagonHeight * 0.5f;
 
         private static float HexSize => WorldGenerator.Instance.HexagonSize;
         private static float HexagonHeight => WorldGenerator.Instance.HexagonHeight;
@@ -48,16 +48,33 @@ namespace MeshCreation
             {Sides.Top, Vector3Int.up},
             {Sides.Bottom, Vector3Int.down}
         };
+        
+        public static readonly Dictionary<Sides, int> UV_SHIFT = new Dictionary<Sides, int>()
+        {
+            {Sides.Top, 0},
+            {Sides.Bottom, 5}
+        };
+
+        public static readonly List<Vector2> HEX_NORMAL_COORDS = new List<Vector2>()
+        {
+            new Vector2(-0.5f * SQRT3, -0.5f),
+            new Vector2(-0.5f * SQRT3, 0.5f),
+            new Vector2(0, 1f),
+
+            new Vector2(0.5f * SQRT3, 0.5f),
+            new Vector2(0.5f * SQRT3, -0.5f),
+            new Vector2(0, -1f)
+        };
 
         public static readonly List<Vector3> HEX_COORDS = new List<Vector3>()
         {
-            new Vector3(-_hexWidth * 0.5f, 0, -_hexHeight * 0.25f),
-            new Vector3(-_hexWidth * 0.5f, 0, _hexHeight * 0.25f),
-            new Vector3(0, 0, _hexHeight * 0.5f),
+            new Vector3(HexSize * HEX_NORMAL_COORDS[0].x, 0, HexSize * HEX_NORMAL_COORDS[0].y),
+            new Vector3(HexSize * HEX_NORMAL_COORDS[1].x, 0, HexSize * HEX_NORMAL_COORDS[1].y),
+            new Vector3(0, 0, HexSize * HEX_NORMAL_COORDS[2].y),
 
-            new Vector3(_hexWidth * 0.5f, 0, _hexHeight * 0.25f),
-            new Vector3(_hexWidth * 0.5f, 0, -_hexHeight * 0.25f),
-            new Vector3(0, 0, -_hexHeight * 0.5f)
+            new Vector3(HexSize * HEX_NORMAL_COORDS[3].x, 0, HexSize * HEX_NORMAL_COORDS[3].y),
+            new Vector3(HexSize * HEX_NORMAL_COORDS[4].x, 0, HexSize * HEX_NORMAL_COORDS[4].y),
+            new Vector3(0, 0, HexSize * HEX_NORMAL_COORDS[5].y)
         };
 
         public static readonly Dictionary<Sides, List<Vector3Int>> HEX_TRIANGLES =
@@ -165,7 +182,7 @@ namespace MeshCreation
 
             return new Vector3Int(x, y, z);
         }
-    
+
         public static bool IsOutsideCircle(int radius, int r, int q)
         {
             int innerRange = radius - 1;

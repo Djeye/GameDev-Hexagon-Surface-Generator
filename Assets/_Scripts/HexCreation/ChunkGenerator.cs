@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using Utilities;
 using UnityEngine;
+using Utilities;
 
 namespace MeshCreation
 {
@@ -11,6 +11,7 @@ namespace MeshCreation
 
         private readonly List<Vector3> _verticies = new List<Vector3>();
         private readonly List<int> _triangles = new List<int>();
+        private readonly List<Vector2> _uv = new List<Vector2>();
 
         private Vector3Int ChunkSize => WorldGenerator.Instance.ChunkSize;
         private int FlatOffset => _verticies.Count - HexInfo.HEX_VERTECIES;
@@ -46,6 +47,7 @@ namespace MeshCreation
 
             _triangles.Clear();
             _verticies.Clear();
+            _uv.Clear();
 
             Iterations.Iterate(GenerateHexagon, ChunkSize);
         }
@@ -54,6 +56,7 @@ namespace MeshCreation
         {
             _chunkMesh.vertices = _verticies.ToArray();
             _chunkMesh.triangles = _triangles.ToArray();
+            _chunkMesh.uv = _uv.ToArray();
 
             _chunkMesh.Optimize();
             _chunkMesh.RecalculateNormals();
@@ -82,15 +85,8 @@ namespace MeshCreation
         private void GenerateFlatHex(HexInfo.Sides side, Vector3Int gridPosition, Vector3 position)
         {
             CreateVertecies(side, position);
+            CreateUVs(side);
             TryConnectTriangles(side, gridPosition + HexInfo.FLAT_NORMALS[side], FlatOffset);
-        }
-
-        private void ConnectSidesTriangles(Vector3Int gridPosition)
-        {
-            foreach (var sideNeighbors in HexInfo.HEX_SIDE_NEIGHBORS)
-            {
-                TryConnectTriangles(sideNeighbors.Key, gridPosition + sideNeighbors.Value, SidesOffset);
-            }
         }
 
         private void CreateVertecies(HexInfo.Sides side, Vector3 position)
@@ -99,6 +95,23 @@ namespace MeshCreation
             {
                 Vector3 newVertex = vertex + HexInfo.FLAT_OFFSET[side];
                 _verticies.Add(newVertex + position);
+            }
+        }
+
+        private void CreateUVs(HexInfo.Sides side)
+        {
+            for (int i = 0; i < HexInfo.HEX_NORMAL_COORDS.Count; i++)
+            {
+                Vector2 vertex = HexInfo.HEX_NORMAL_COORDS[(i + HexInfo.UV_SHIFT[side]) % HexInfo.HEX_VERTECIES];
+                _uv.Add(vertex);
+            }
+        }
+
+        private void ConnectSidesTriangles(Vector3Int gridPosition)
+        {
+            foreach (var sideNeighbors in HexInfo.HEX_SIDE_NEIGHBORS)
+            {
+                TryConnectTriangles(sideNeighbors.Key, gridPosition + sideNeighbors.Value, SidesOffset);
             }
         }
 

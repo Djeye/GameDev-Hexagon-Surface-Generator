@@ -2,7 +2,7 @@ using System;
 using MeshCreation;
 using Utilities;
 
-public class GameManager : StaticInstance<GameManager>
+public class GameManager : Singleton<GameManager>
 {
     public static event Action<GameState> OnBeforeStateChanged;
     public static event Action<GameState> OnAfterStateChanged;
