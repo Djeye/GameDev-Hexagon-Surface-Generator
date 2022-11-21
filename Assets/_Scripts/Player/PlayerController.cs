@@ -8,6 +8,7 @@ namespace Player
     public class PlayerController : MonoBehaviour
     {
         [SerializeField] private Mech mech;
+        [SerializeField] private bool applyGravity=true;
 
         [Space]
         [SerializeField] private float speed;
@@ -15,7 +16,7 @@ namespace Player
         [SerializeField] private float turnSmoothTime;
 
         private CharacterController _controller;
-        private HexInteractor _hexInteractor;
+        private HexagonInteractor _hexagonInteractor;
 
         private Transform _transform;
         private Camera _cam;
@@ -39,20 +40,23 @@ namespace Player
             Cursor.lockState = CursorLockMode.Locked;
 
             mech.InitLegs(_transform);
-            _hexInteractor = new HexInteractor(_cam);
+            _hexagonInteractor = new HexagonInteractor(_transform, _cam);
         }
 
         private void Update()
         {
             Moving(out Vector3 moveDirection);
             mech.UpdateLegsMovement(moveDirection);
-            _hexInteractor.Update();
+            _hexagonInteractor.Update();
         }
 
 
         private void Moving(out Vector3 moveDirection)
         {
-            ApplyGravity();
+            if (applyGravity)
+            {
+                ApplyGravity();
+            }
 
             if (!InputSystem.Instance.IsMoving)
             {

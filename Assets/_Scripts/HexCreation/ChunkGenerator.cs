@@ -109,9 +109,9 @@ namespace MeshCreation
 
         private void ConnectSidesTriangles(Vector3Int gridPosition)
         {
-            foreach (var sideNeighbors in HexInfo.HEX_SIDE_NEIGHBORS)
+            foreach ((HexInfo.Sides side, Vector3Int neighbor) in HexInfo.HEX_SIDE_NEIGHBORS)
             {
-                TryConnectTriangles(sideNeighbors.Key, gridPosition + sideNeighbors.Value, SidesOffset);
+                TryConnectTriangles(side, gridPosition + neighbor, SidesOffset);
             }
         }
 

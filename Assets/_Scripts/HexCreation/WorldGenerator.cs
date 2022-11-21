@@ -31,12 +31,12 @@ namespace MeshCreation
 
         private void InitializeTerrain(int chunkX, int chunkY)
         {
-            Vector2Int chunkIndex = new Vector2Int(chunkX, chunkY);
+            Vector2Int chunkIndex = new Vector2Int(chunkX - chunkGridSize.x / 2, chunkY - chunkGridSize.y / 2);
             HexType[,,] chunkTerrain = TerrainGenerator.GenerateChunkTerrain(chunkSize, chunkIndex);
 
-            Vector3 chunkOffset = HexInfo.GetWorldCoords(chunkX * chunkSize.x, 0, chunkY * chunkSize.z);
-            ChunkGenerator chunk =
-                Instantiate(chunkGenerator, _transform.position + chunkOffset, Quaternion.identity, _transform);
+            Vector3 chunkOffset = HexInfo.GetWorldCoords(chunkIndex.x * chunkSize.x, 0, chunkIndex.y * chunkSize.z);
+            ChunkGenerator chunk = Instantiate(chunkGenerator, _transform.position + chunkOffset,
+                Quaternion.identity, _transform);
 
             ChunkData chunkData = new ChunkData(chunkIndex, chunkTerrain, chunk);
 
@@ -45,9 +45,9 @@ namespace MeshCreation
 
         private void GenerateTerrain()
         {
-            foreach (ChunkData value in terrain.Values)
+            foreach (ChunkData chunk in terrain.Values)
             {
-                value.chunkGenerator.RegenerateChunk();
+                chunk.chunkGenerator.RegenerateChunk();
             }
         }
     }

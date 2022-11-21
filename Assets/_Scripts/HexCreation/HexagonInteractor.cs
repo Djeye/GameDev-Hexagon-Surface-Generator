@@ -2,26 +2,32 @@
 
 namespace MeshCreation
 {
-    public class HexInteractor
+    public class HexagonInteractor
     {
         private Vector3Int _chunkSize;
         private readonly float _hexagonHeight;
         private readonly float _hexagonSize;
+        private readonly Transform _player;
         private readonly Camera _cam;
 
-        public HexInteractor(Camera cam)
+        public HexagonInteractor(Transform player, Camera cam)
         {
+            _player = player;
+            _cam = cam;
+
             _chunkSize = WorldGenerator.Instance.ChunkSize;
             _hexagonHeight = WorldGenerator.Instance.HexagonSize;
             _hexagonSize = WorldGenerator.Instance.HexagonHeight;
-            _cam = cam;
         }
-        
+
+
         public void Update()
         {
             InteractWithHexes();
+            //CheckPlayerChunk();
         }
-        
+
+
         private void InteractWithHexes()
         {
             if (!InputSystem.Instance.IsMouseButtonPressed)
@@ -40,8 +46,8 @@ namespace MeshCreation
             int multiplier = isDestroying ? -1 : 1;
 
             Vector3 hexCentrePoint = HexInfo.FLAT_NORMALS.ContainsValue(Vector3Int.RoundToInt(hitInfo.normal))
-                ? hitInfo.point + multiplier * hitInfo.normal * _hexagonHeight / 2f
-                : hitInfo.point + multiplier * hitInfo.normal * _hexagonSize;
+                ? hitInfo.point + multiplier * _hexagonHeight / 2f * hitInfo.normal
+                : hitInfo.point + multiplier * _hexagonSize * hitInfo.normal;
 
             Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(hexCentrePoint);
             Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
@@ -51,23 +57,31 @@ namespace MeshCreation
                 return;
             }
 
-            Vector3Int hexPos = GetHexPositionInChunk(hexLocalPos);
+            Vector3Int hexPos = GetHexPositionInChunk(hexLocalPos, chunkPos);
 
             chunkData.chunkGenerator.ChangeHexTypeAtPosition(hexPos, isDestroying ? HexType.Void : HexType.Dirt);
-
-
-            Vector2Int GetChunkByHexPosition(Vector3Int hexLocalCoords)
-            {
-                return new Vector2Int(hexLocalCoords.x / _chunkSize.x, hexLocalCoords.z / _chunkSize.y);
-            }
-
-            Vector3Int GetHexPositionInChunk(Vector3Int hexLocalCoords)
-            {
-                Vector2Int chunkGridPos = GetChunkByHexPosition(hexLocalCoords);
-                Vector3Int chunkGridPos3D = new Vector3Int(chunkGridPos.x, 0, chunkGridPos.y);
-
-                return hexLocalCoords - chunkGridPos3D * _chunkSize;
-            }
         }
+
+        private void CheckPlayerChunk()
+        {
+            Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(_player.position);
+            Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
+        }
+
+        private Vector2Int GetChunkByHexPosition(Vector3Int hexLocalCoords)
+        {
+            int chunkPosX = Mathf.FloorToInt((float)hexLocalCoords.x / _chunkSize.x);
+            int chunkPosY = Mathf.FloorToInt((float)hexLocalCoords.z / _chunkSize.z);
+            
+            return new Vector2Int(chunkPosX, chunkPosY);
+        }
+
+        private Vector3Int GetHexPositionInChunk(Vector3Int hexLocalCoords, Vector2Int chunkPos)
+        {
+            Vector3Int chunkGridPos3D = new Vector3Int(chunkPos.x, 0, chunkPos.y);
+
+            return hexLocalCoords - chunkGridPos3D * _chunkSize;
+        }
+        
     }
 }
