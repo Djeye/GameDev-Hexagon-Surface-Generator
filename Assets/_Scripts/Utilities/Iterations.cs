@@ -23,7 +23,7 @@ namespace Utilities
             }
         }
 
-        private static void Iterate(Action<int, int> action, int sizeX, int sizeY)
+        public static void Iterate(Action<int, int> action, int sizeX, int sizeY)
         {
             for (int x = 0; x < sizeX; x++)
             {
@@ -34,7 +34,7 @@ namespace Utilities
             }
         }
 
-        private static void Iterate(Action<int, int, int> action, int sizeX, int sizeY, int sizeZ)
+        public static void Iterate(Action<int, int, int> action, int sizeX, int sizeY, int sizeZ)
         {
             for (int x = 0; x < sizeX; x++)
             {

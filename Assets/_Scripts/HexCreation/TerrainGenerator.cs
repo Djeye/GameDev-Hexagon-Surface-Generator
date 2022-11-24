@@ -1,37 +1,81 @@
-﻿using Utilities;
+﻿using System;
 using UnityEngine;
 
 namespace MeshCreation
 {
-    public static class TerrainGenerator
+    public class TerrainGenerator
     {
-        public static HexType[,,] GenerateChunkTerrain(Vector3Int chunkSize, Vector2Int chunkIndex)
+        private Vector3Int _chunkSize;
+
+        private readonly NoiseOctave[] _noiseOctaves;
+
+        public TerrainGenerator(NoiseOctave[] octaves, Vector3Int chunkSize)
         {
-            int chunkSizeX = chunkSize.x;
-            int chunkSizeY = chunkSize.y;
-            int chunkSizeZ = chunkSize.z;
+            _chunkSize = chunkSize;
+            _noiseOctaves = octaves;
 
-            var result = new HexType[chunkSizeX, chunkSizeY, chunkSizeZ];
-
-            Vector2Int chunk2DSize = new Vector2Int(chunkSizeX, chunkSizeZ);
-
-            Iterations.Iterate(GenerateHexagonTerrain, chunk2DSize);
-
-            return result;
-
-            void GenerateHexagonTerrain(int x, int z)
+            foreach (NoiseOctave octave in octaves)
             {
-                float xScale = 1f / chunkSizeX;
-                float zScale = 1f / chunkSizeZ;
+                octave.Init();
+            }
+        }
 
-                float noise = Mathf.PerlinNoise(x * xScale + chunkIndex.x, z * zScale + chunkIndex.y) * chunkSizeY;
-                float height = Mathf.Clamp(noise, 0, chunkSizeY);
+        [Serializable]
+        public class NoiseOctave
+        {
+            [SerializeField] private FastNoiseLite.NoiseType noiseType;
+            [SerializeField] private float frequency;
+            [SerializeField] private float amplitude;
 
-                for (int y = 0; y < height; y++)
+            public FastNoiseLite noiseGen;
+
+            public float Amplitude => amplitude;
+
+            public void Init()
+            {
+                noiseGen = new FastNoiseLite();
+
+                noiseGen.SetNoiseType(noiseType);
+                noiseGen.SetFrequency(frequency);
+            }
+        }
+
+        public HexType[,,] GenerateChunkTerrain(Vector2Int chunkIndex)
+        {
+            var result = new HexType[_chunkSize.x, _chunkSize.y, _chunkSize.z];
+
+            for (int x = 0; x < _chunkSize.x; x++)
+            {
+                for (int z = 0; z < _chunkSize.z; z++)
                 {
-                    result[x, y, z] = HexType.Dirt;
+                    float xScale = 1f / _chunkSize.x;
+                    float zScale = 1f / _chunkSize.z;
+
+                    float height = GetNoise(x * xScale + chunkIndex.x, z * zScale + chunkIndex.y);
+
+                    for (int y = 0; y < height; y++)
+                    {
+                        result[x, y, z] = HexType.Dirt;
+                    }
                 }
             }
+
+            return result;
+        }
+
+        private float GetNoise(float x, float y)
+        {
+            float result = 0;
+
+            foreach (NoiseOctave octave in _noiseOctaves)
+            {
+                result += (octave.noiseGen.GetNoise(x, y) + 1) * 0.5f * octave.Amplitude;
+            }
+            
+            //result = result * _chunkSize.y / _noiseOctaves.Length;
+            result = Mathf.Clamp(result * _chunkSize.y, 0, _chunkSize.y);
+
+            return result;
         }
     }
 }

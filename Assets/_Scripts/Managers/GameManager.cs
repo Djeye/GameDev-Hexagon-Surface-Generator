@@ -1,5 +1,4 @@
 using System;
-using MeshCreation;
 using Utilities;
 
 public class GameManager : Singleton<GameManager>
@@ -32,7 +31,7 @@ public class GameManager : Singleton<GameManager>
 
     private void HandleStarting()
     {
-        WorldGenerator.Instance.GenerateWorld();
+        //WorldGenerator.Instance.GenerateWorld();
 
         //ChangeState(GameState.Ending);
     }

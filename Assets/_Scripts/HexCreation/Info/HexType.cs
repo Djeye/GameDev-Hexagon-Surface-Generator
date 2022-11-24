@@ -2,19 +2,28 @@
 
 namespace MeshCreation
 {
-    public readonly struct ChunkData
+    public struct ChunkData
     {
         public readonly Vector2Int chunkPosition;
         public readonly ChunkGenerator chunkGenerator;
         private readonly HexType[,,] _hexagons;
+
+        public bool isLoaded;
 
         public ChunkData(Vector2Int chunkIndex, HexType[,,] chunkTerrain, ChunkGenerator generator)
         {
             chunkPosition = chunkIndex;
             _hexagons = chunkTerrain;
             chunkGenerator = generator;
-        
+            
+            isLoaded = false;
             chunkGenerator.Init(this);
+        }
+
+        public void SetActive(bool state)
+        {
+            isLoaded = state;
+            chunkGenerator.gameObject.SetActive(state);
         }
 
         public HexType GetHexByPos(Vector3Int hexPos)

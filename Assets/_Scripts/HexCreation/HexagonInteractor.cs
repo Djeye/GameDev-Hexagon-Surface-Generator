@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace MeshCreation
 {
@@ -10,6 +13,9 @@ namespace MeshCreation
         private readonly Transform _player;
         private readonly Camera _cam;
 
+        private Vector2Int _currentChunk;
+        private readonly List<Action> _slowActions = new List<Action>();
+
         public HexagonInteractor(Transform player, Camera cam)
         {
             _player = player;
@@ -18,15 +24,49 @@ namespace MeshCreation
             _chunkSize = WorldGenerator.Instance.ChunkSize;
             _hexagonHeight = WorldGenerator.Instance.HexagonSize;
             _hexagonSize = WorldGenerator.Instance.HexagonHeight;
+
+            _currentChunk = new Vector2Int(int.MaxValue, int.MaxValue);
+
+            _slowActions.Add(GenerateTerrainAroundPlayer);
+        }
+
+        public IEnumerator SlowUpdate()
+        {
+            WaitForSeconds waiter = new WaitForSeconds(0.1f);
+
+            while (true)
+            {
+                foreach (Action action in _slowActions)
+                {
+                    action.Invoke();
+                }
+
+                yield return waiter;
+            }
+
+            // ReSharper disable once IteratorNeverReturns
         }
 
 
         public void Update()
         {
             InteractWithHexes();
-            //CheckPlayerChunk();
         }
 
+
+        private void GenerateTerrainAroundPlayer()
+        {
+            Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(_player.position);
+            Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
+
+            if (chunkPos == _currentChunk)
+            {
+                return;
+            }
+
+            _currentChunk = chunkPos;
+            WorldGenerator.Instance.GenerateWorld(chunkPos);
+        }
 
         private void InteractWithHexes()
         {
@@ -62,17 +102,11 @@ namespace MeshCreation
             chunkData.chunkGenerator.ChangeHexTypeAtPosition(hexPos, isDestroying ? HexType.Void : HexType.Dirt);
         }
 
-        private void CheckPlayerChunk()
-        {
-            Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(_player.position);
-            Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
-        }
-
         private Vector2Int GetChunkByHexPosition(Vector3Int hexLocalCoords)
         {
             int chunkPosX = Mathf.FloorToInt((float)hexLocalCoords.x / _chunkSize.x);
             int chunkPosY = Mathf.FloorToInt((float)hexLocalCoords.z / _chunkSize.z);
-            
+
             return new Vector2Int(chunkPosX, chunkPosY);
         }
 
@@ -82,6 +116,5 @@ namespace MeshCreation
 
             return hexLocalCoords - chunkGridPos3D * _chunkSize;
         }
-        
     }
 }

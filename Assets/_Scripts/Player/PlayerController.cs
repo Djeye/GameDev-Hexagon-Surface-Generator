@@ -41,6 +41,8 @@ namespace Player
 
             mech.InitLegs(_transform);
             _hexagonInteractor = new HexagonInteractor(_transform, _cam);
+
+            StartCoroutine(_hexagonInteractor.SlowUpdate());
         }
 
         private void Update()
