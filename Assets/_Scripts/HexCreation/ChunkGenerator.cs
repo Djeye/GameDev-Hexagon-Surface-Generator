@@ -153,7 +153,7 @@ namespace MeshCreation
 
                 Vector2Int adjChunkPosition = GetAdjChunk(neighborHexPos);
 
-                if (WorldGenerator.Instance.terrain.TryGetValue(adjChunkPosition, out ChunkData adjChunkData))
+                if (WorldGenerator.Instance.IsGenerated(adjChunkPosition, out ChunkData adjChunkData))
                 {
                     adjChunkData.chunkGenerator.RegenerateChunk();
                 }
@@ -176,7 +176,7 @@ namespace MeshCreation
 
             Vector2Int adjChunkPosition = GetAdjChunk(hexPos, out Vector3Int adjHexPos);
 
-            if (WorldGenerator.Instance.terrain.TryGetValue(adjChunkPosition, out ChunkData adjChunk))
+            if (WorldGenerator.Instance.IsGenerated(adjChunkPosition, out ChunkData adjChunk))
             {
                 return adjChunk.GetHexByPos(adjHexPos);
             }

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace MeshCreation
 {
@@ -14,7 +11,6 @@ namespace MeshCreation
         private readonly Camera _cam;
 
         private Vector2Int _currentChunk;
-        private readonly List<Action> _slowActions = new List<Action>();
 
         public HexagonInteractor(Transform player, Camera cam)
         {
@@ -26,25 +22,6 @@ namespace MeshCreation
             _hexagonSize = WorldGenerator.Instance.HexagonHeight;
 
             _currentChunk = new Vector2Int(int.MaxValue, int.MaxValue);
-
-            _slowActions.Add(GenerateTerrainAroundPlayer);
-        }
-
-        public IEnumerator SlowUpdate()
-        {
-            WaitForSeconds waiter = new WaitForSeconds(0.1f);
-
-            while (true)
-            {
-                foreach (Action action in _slowActions)
-                {
-                    action.Invoke();
-                }
-
-                yield return waiter;
-            }
-
-            // ReSharper disable once IteratorNeverReturns
         }
 
 
@@ -53,8 +30,7 @@ namespace MeshCreation
             InteractWithHexes();
         }
 
-
-        private void GenerateTerrainAroundPlayer()
+        public void GenerateTerrainAroundPlayer()
         {
             Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(_player.position);
             Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
@@ -92,7 +68,7 @@ namespace MeshCreation
             Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(hexCentrePoint);
             Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
 
-            if (!WorldGenerator.Instance.terrain.TryGetValue(chunkPos, out ChunkData chunkData))
+            if (!WorldGenerator.Instance.IsGenerated(chunkPos, out ChunkData chunkData))
             {
                 return;
             }

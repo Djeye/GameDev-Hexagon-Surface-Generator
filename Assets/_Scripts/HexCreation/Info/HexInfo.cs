@@ -48,7 +48,7 @@ namespace MeshCreation
             {Sides.Top, Vector3Int.up},
             {Sides.Bottom, Vector3Int.down}
         };
-        
+
         public static readonly Dictionary<Sides, int> UV_SHIFT = new Dictionary<Sides, int>()
         {
             {Sides.Top, 0},
@@ -153,6 +153,11 @@ namespace MeshCreation
                 {Sides.RightFront, new Vector3Int(1, 0, -1)}
             };
 
+        public static Vector3 GetWorldCoords(int x, int y)
+        {
+            return GetWorldCoords(x, 0, y);
+        }
+
         public static Vector3 GetWorldCoords(Vector3Int pos)
         {
             return GetWorldCoords(pos.x, pos.y, pos.z);
@@ -183,6 +188,11 @@ namespace MeshCreation
             return new Vector3Int(x, y, z);
         }
 
+        public static bool IsInsideCircle(int x, int y, int radius)
+        {
+            return x * x + y * y < radius * radius;
+        }
+        
         public static bool IsOutsideCircle(int radius, int r, int q)
         {
             int innerRange = radius - 1;

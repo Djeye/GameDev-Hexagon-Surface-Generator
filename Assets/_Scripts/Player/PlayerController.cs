@@ -1,11 +1,12 @@
 ﻿using MeshCreation;
 using ProceduralAnimation;
 using UnityEngine;
+using Utilities;
 
 namespace Player
 {
     [RequireComponent(typeof(CharacterController))]
-    public class PlayerController : MonoBehaviour
+    public class PlayerController : SlowUpdater
     {
         [SerializeField] private Mech mech;
         [SerializeField] private bool applyGravity=true;
@@ -35,15 +36,16 @@ namespace Player
             }
         }
 
-        private void Start()
+        protected override void PreStart()
         {
             Cursor.lockState = CursorLockMode.Locked;
 
             mech.InitLegs(_transform);
             _hexagonInteractor = new HexagonInteractor(_transform, _cam);
 
-            StartCoroutine(_hexagonInteractor.SlowUpdate());
+            slowActions.Add(_hexagonInteractor.GenerateTerrainAroundPlayer);
         }
+        
 
         private void Update()
         {
