@@ -7,6 +7,9 @@ namespace MeshCreation
     [RequireComponent(typeof(MeshRenderer), typeof(MeshFilter), typeof(MeshCollider))]
     public class ChunkGenerator : MonoBehaviour
     {
+        [SerializeField] private MeshFilter meshFilter;
+        [SerializeField] private MeshCollider meshCollider;
+        
         private ChunkData _chunkData;
 
         private readonly List<Vector3> _verticies = new List<Vector3>();
@@ -18,16 +21,7 @@ namespace MeshCreation
         private int SidesOffset => _verticies.Count - 2 * HexInfo.HEX_VERTECIES;
 
         private Mesh _chunkMesh;
-        private MeshFilter _meshFilter;
-        private MeshCollider _meshCollider;
-
-
-        private void Awake()
-        {
-            _meshFilter = GetComponent<MeshFilter>();
-            _meshCollider = GetComponent<MeshCollider>();
-        }
-
+        
 
         public void Init(ChunkData chunkData)
         {
@@ -62,8 +56,8 @@ namespace MeshCreation
             _chunkMesh.RecalculateNormals();
             _chunkMesh.RecalculateBounds();
 
-            _meshFilter.mesh = _chunkMesh;
-            _meshCollider.sharedMesh = _chunkMesh;
+            meshFilter.mesh = _chunkMesh;
+            meshCollider.sharedMesh = _chunkMesh;
         }
 
         private void GenerateHexagon(int x, int y, int z)
@@ -93,7 +87,7 @@ namespace MeshCreation
         {
             foreach (Vector3 vertex in HexInfo.HEX_COORDS)
             {
-                Vector3 newVertex = vertex + HexInfo.FLAT_OFFSET[side];
+                Vector3 newVertex = vertex + HexInfo.FLAT_OFFSETS[side];
                 _verticies.Add(newVertex + position);
             }
         }

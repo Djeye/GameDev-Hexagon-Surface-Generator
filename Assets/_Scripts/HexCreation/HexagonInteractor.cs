@@ -68,7 +68,8 @@ namespace MeshCreation
             Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(hexCentrePoint);
             Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
 
-            if (!WorldGenerator.Instance.IsGenerated(chunkPos, out ChunkData chunkData))
+            if (!WorldGenerator.Instance.IsGenerated(chunkPos, out ChunkData chunkData) ||
+                hexLocalPos.y >= _chunkSize.y)
             {
                 return;
             }

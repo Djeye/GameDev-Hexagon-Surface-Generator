@@ -14,9 +14,9 @@ namespace MeshCreation
         private static readonly float _hexWidth = SQRT3 * HexSize;
         private static readonly float _hexHeight = 2f * HexSize;
 
-        public static readonly float HEX_HORIZONTAL_SHIFT = 0.5f * _hexWidth;
-        public static readonly float HEX_HORIZONTAL_OFFSET = _hexWidth;
-        public static readonly float HEX_VERTICAL_OFFSET = 3 / 4f * _hexHeight;
+        private static readonly float _hexHorizontalOffset = _hexWidth;
+        private static readonly float _hexVerticalOffset = 3 / 4f * _hexHeight;
+        private static readonly float _hexHorizontalShift = 0.5f * _hexWidth;
 
         private static readonly float _hexHeightOffset = HexagonHeight;
         private static readonly float _hexHeightHalfOffset = HexagonHeight * 0.5f;
@@ -37,7 +37,7 @@ namespace MeshCreation
             RightFront = 7
         }
 
-        public static readonly Dictionary<Sides, Vector3> FLAT_OFFSET = new Dictionary<Sides, Vector3>()
+        public static readonly Dictionary<Sides, Vector3> FLAT_OFFSETS = new Dictionary<Sides, Vector3>()
         {
             {Sides.Top, _hexHeightHalfOffset * Vector3.up},
             {Sides.Bottom, _hexHeightHalfOffset * Vector3.down}
@@ -165,9 +165,9 @@ namespace MeshCreation
 
         public static Vector3 GetWorldCoords(int x, int y, int z)
         {
-            float hexX = x * HEX_HORIZONTAL_OFFSET + z * HEX_HORIZONTAL_SHIFT;
+            float hexX = x * _hexHorizontalOffset + z * _hexHorizontalShift;
             float hexY = y * _hexHeightOffset;
-            float hexZ = z * HEX_VERTICAL_OFFSET;
+            float hexZ = z * _hexVerticalOffset;
 
             return new Vector3(hexX, hexY, hexZ);
         }
@@ -179,9 +179,9 @@ namespace MeshCreation
 
         public static Vector3Int GetHexagonCoords(float hexX, float hexY, float hexZ)
         {
-            float dirtyZ = hexZ / HEX_VERTICAL_OFFSET;
+            float dirtyZ = hexZ / _hexVerticalOffset;
 
-            int x = Mathf.RoundToInt((hexX - dirtyZ * HEX_HORIZONTAL_SHIFT) / HEX_HORIZONTAL_OFFSET);
+            int x = Mathf.RoundToInt((hexX - dirtyZ * _hexHorizontalShift) / _hexHorizontalOffset);
             int y = Mathf.RoundToInt(hexY / _hexHeightOffset);
             int z = Mathf.RoundToInt(dirtyZ);
 
