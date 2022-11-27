@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Utilities;
 
@@ -12,7 +11,7 @@ namespace MeshCreation
         [SerializeField] private float hexagonHeight = 1f;
 
         [Header("World Generation")]
-        [SerializeField] private int warmUpChunks;
+        [SerializeField] private int warmUpChunksRadius;
         [SerializeField] private TerrainGenerator.NoiseOctave[] noiseGenerator;
 
         [Header("Chunk Info")]
@@ -26,106 +25,133 @@ namespace MeshCreation
         public float HexagonHeight => hexagonHeight != 0 ? hexagonHeight : HexInfo.HEX_DEF_HEIGHT;
         public Vector3Int ChunkSize => chunkSize;
 
-        public readonly Dictionary<Vector2Int, ChunkData> terrain = new Dictionary<Vector2Int, ChunkData>();
+        public bool IsGenerated(Vector2Int chunkPos, out ChunkData data) =>
+            _terrain.TryGetValue(chunkPos, out data) && data.IsGenerated;
+
+        private readonly Dictionary<Vector2Int, ChunkData> _terrain = new Dictionary<Vector2Int, ChunkData>();
         private readonly List<Vector2Int> _loadedChunks = new List<Vector2Int>();
         private readonly List<Vector2Int> _unloadedChunks = new List<Vector2Int>();
 
         private TerrainGenerator _terrainGenerator;
 
-        private void Start()
+
+        public void PrepareChunks()
         {
             _terrainGenerator = new TerrainGenerator(noiseGenerator, chunkSize);
 
-            //PrepareChunks();
-        }
-
-        private void PrepareChunks()
-        {
-            for (int x = 0; x < warmUpChunks; x++)
+            for (int x = -warmUpChunksRadius; x < warmUpChunksRadius; x++)
             {
-                for (int y = 0; y < warmUpChunks; y++)
+                for (int y = -warmUpChunksRadius; y < warmUpChunksRadius; y++)
                 {
-                    
-                    Vector2Int chunkIndex = new Vector2Int(x - warmUpChunks / 2, y - warmUpChunks / 2);
-
-                    Vector3 chunkOffset = HexInfo.GetWorldCoords(chunkIndex.x * chunkSize.x, 0, chunkIndex.y * chunkSize.z);
-                    ChunkGenerator chunk = Instantiate(chunkGenerator, _transform.position + chunkOffset, Quaternion.identity, _transform);
-                    ChunkData chunkData = new ChunkData(chunkIndex, null, chunk);
-                    chunkData.SetActive(false);
-                    
-                    terrain.Add(chunkIndex, chunkData);
+                    Vector2Int chunkIndex = new Vector2Int(x, y);
+                    Vector3 chunkPosition =
+                        HexInfo.GetWorldCoords(chunkIndex.x * chunkSize.x, chunkIndex.y * chunkSize.z);
+                    ChunkGenerator chunk = Instantiate(chunkGenerator, chunkPosition, Quaternion.identity, _transform);
+                    ChunkData chunkData = new ChunkData(chunkIndex, chunk);
+                    _terrain.Add(chunkIndex, chunkData);
                 }
             }
         }
 
         public void GenerateWorld(Vector2Int pos)
         {
-            _loadedChunks.Clear();
+            FillUnloadedChunks(pos);
+            FillLoadedChunks(pos);
+
+            DisableUnloadedChunks();
+            RegenerateLoadedChunks();
+        }
+
+
+        private void FillUnloadedChunks(Vector2Int chunkPos)
+        {
             _unloadedChunks.Clear();
 
-            for (int x = 0; x < 2 * radius; x++)
+            int doubledRadius = 2 * radius;
+            for (int x = -doubledRadius; x < doubledRadius; x++)
             {
-                for (int y = 0; y < 2 * radius; y++)
+                for (int y = -doubledRadius; y < doubledRadius; y++)
                 {
-                    Vector2Int chunkIndex = new Vector2Int(x + pos.x - radius, y + pos.y - radius);
+                    Vector2Int outerChunkInd = new Vector2Int(chunkPos.x + x, chunkPos.y + y);
 
-                    _loadedChunks.Add(chunkIndex);
-
-                    if (!IsInsideCircle(x - radius, y - radius, radius) || terrain.ContainsKey(chunkIndex))
+                    if (!HexInfo.IsInsideCircle(x, y, doubledRadius))
                     {
                         continue;
                     }
 
-                    HexType[,,] chunkTerrain = _terrainGenerator.GenerateChunkTerrain(chunkIndex);
-
-                    Vector3 chunkOffset =
-                        HexInfo.GetWorldCoords(chunkIndex.x * chunkSize.x, 0, chunkIndex.y * chunkSize.z);
-                    ChunkGenerator chunk = Instantiate(chunkGenerator, _transform.position + chunkOffset,
-                        Quaternion.identity, _transform);
-
-                    ChunkData chunkData = new ChunkData(chunkIndex, chunkTerrain, chunk);
-                    chunkData.SetActive(true);
-                    terrain.Add(chunkIndex, chunkData);
+                    _unloadedChunks.Add(outerChunkInd);
                 }
-            }
-
-            foreach (var data in terrain.Keys)
-            {
-                if (!_loadedChunks.Contains(data))
-                {
-                    terrain[data].chunkGenerator.gameObject.SetActive(false);
-                    _unloadedChunks.Add(data);
-                }
-            }
-
-            foreach (var data in _unloadedChunks)
-            {
-                terrain.Remove(data);
-            }
-
-            foreach (ChunkData chunk in terrain.Values)
-            {
-                chunk.chunkGenerator.RegenerateChunk();
             }
         }
 
-
-        private bool IsInsideCircle(int x, int y, int r)
+        private void FillLoadedChunks(Vector2Int pos)
         {
-            return x * x + y * y <= r * r;
+            _loadedChunks.Clear();
+
+            for (int x = -radius; x < radius; x++)
+            {
+                for (int y = -radius; y < radius; y++)
+                {
+                    Vector2Int chunkInd = new Vector2Int(pos.x + x, pos.y + y);
+
+                    if (!HexInfo.IsInsideCircle(x, y, radius))
+                    {
+                        continue;
+                    }
+
+                    _unloadedChunks.Remove(chunkInd);
+
+                    if (!_terrain.TryGetValue(chunkInd, out ChunkData data))
+                    {
+                        continue;
+                    }
+
+                    if (!data.IsGenerated)
+                    {
+                        HexType[,,] chunkTerrain = _terrainGenerator.GenerateChunkTerrain(chunkInd);
+
+                        _terrain[chunkInd] = new ChunkData(chunkInd, data.chunkGenerator, chunkTerrain);
+                    }
+
+                    _loadedChunks.Add(chunkInd);
+                    _terrain[chunkInd].SetActive(true);
+                }
+            }
         }
-        
+
+        private void DisableUnloadedChunks()
+        {
+            foreach (Vector2Int chunkInd in _unloadedChunks)
+            {
+                if (_terrain.ContainsKey(chunkInd))
+                {
+                    _terrain[chunkInd].SetActive(false);
+                }
+            }
+        }
+
+        private void RegenerateLoadedChunks()
+        {
+            foreach (Vector2Int chunkInd in _loadedChunks)
+            {
+                //TODO Умно перестраивать чанки. Не все, только ново добавленные, и соседние к ним
+                if (!_terrain[chunkInd].IsBuilded)
+                {
+                    _terrain[chunkInd].Regenerate();
+                }
+            }
+        }
+
+
         [ContextMenu("Regenerate terrain")]
-        void Regenerate()
+        private void RegenerateEntireWorld()
         {
             _terrainGenerator = new TerrainGenerator(noiseGenerator, chunkSize);
 
-            foreach (var data in terrain)
+            foreach (var data in _loadedChunks)
             {
-                Destroy(data.Value.chunkGenerator.gameObject);
+                _terrain[data] = new ChunkData(data, _terrain[data].chunkGenerator);
             }
-
-            terrain.Clear();
 
             GenerateWorld(Vector2Int.zero);
         }

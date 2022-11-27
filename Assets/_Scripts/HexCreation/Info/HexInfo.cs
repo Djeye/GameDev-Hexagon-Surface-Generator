@@ -7,7 +7,7 @@ namespace MeshCreation
     {
         public const int HEX_VERTECIES = 6;
         public const float HEX_DEF_SIZE = 0.57735f; // 1 / sqrt(3)
-        public const float HEX_DEF_HEIGHT = 1f;
+        public const float HEX_DEF_HEIGHT = 0.5f;
 
         private const float SQRT3 = 1.73205f; // sqrt(3)
 

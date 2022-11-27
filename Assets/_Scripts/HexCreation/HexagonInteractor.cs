@@ -5,8 +5,8 @@ namespace MeshCreation
     public class HexagonInteractor
     {
         private Vector3Int _chunkSize;
-        private readonly float _hexagonHeight;
         private readonly float _hexagonSize;
+        private readonly float _hexagonHeight;
         private readonly Transform _player;
         private readonly Camera _cam;
 
@@ -18,8 +18,8 @@ namespace MeshCreation
             _cam = cam;
 
             _chunkSize = WorldGenerator.Instance.ChunkSize;
-            _hexagonHeight = WorldGenerator.Instance.HexagonSize;
-            _hexagonSize = WorldGenerator.Instance.HexagonHeight;
+            _hexagonSize = WorldGenerator.Instance.HexagonSize;
+            _hexagonHeight = WorldGenerator.Instance.HexagonHeight;
 
             _currentChunk = new Vector2Int(int.MaxValue, int.MaxValue);
         }
@@ -68,15 +68,12 @@ namespace MeshCreation
             Vector3Int hexLocalPos = HexInfo.GetHexagonCoords(hexCentrePoint);
             Vector2Int chunkPos = GetChunkByHexPosition(hexLocalPos);
 
-            if (!WorldGenerator.Instance.IsGenerated(chunkPos, out ChunkData chunkData) ||
-                hexLocalPos.y >= _chunkSize.y)
+            if (WorldGenerator.Instance.IsGenerated(chunkPos, out ChunkData chunkData) && hexLocalPos.y < _chunkSize.y)
             {
-                return;
+                Vector3Int hexPos = GetHexPositionInChunk(hexLocalPos, chunkPos);
+
+                chunkData.chunkGenerator.ChangeHexTypeAtPosition(hexPos, isDestroying ? HexType.Void : HexType.Dirt);
             }
-
-            Vector3Int hexPos = GetHexPositionInChunk(hexLocalPos, chunkPos);
-
-            chunkData.chunkGenerator.ChangeHexTypeAtPosition(hexPos, isDestroying ? HexType.Void : HexType.Dirt);
         }
 
         private Vector2Int GetChunkByHexPosition(Vector3Int hexLocalCoords)

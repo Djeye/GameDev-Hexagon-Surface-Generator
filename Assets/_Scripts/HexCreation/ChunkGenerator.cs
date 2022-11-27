@@ -9,7 +9,9 @@ namespace MeshCreation
     {
         [SerializeField] private MeshFilter meshFilter;
         [SerializeField] private MeshCollider meshCollider;
-        
+
+        public bool IsBuilded { get; private set; }
+
         private ChunkData _chunkData;
 
         private readonly List<Vector3> _verticies = new List<Vector3>();
@@ -21,7 +23,7 @@ namespace MeshCreation
         private int SidesOffset => _verticies.Count - 2 * HexInfo.HEX_VERTECIES;
 
         private Mesh _chunkMesh;
-        
+
 
         public void Init(ChunkData chunkData)
         {
@@ -58,6 +60,8 @@ namespace MeshCreation
 
             meshFilter.mesh = _chunkMesh;
             meshCollider.sharedMesh = _chunkMesh;
+
+            IsBuilded = true;
         }
 
         private void GenerateHexagon(int x, int y, int z)
@@ -160,7 +164,7 @@ namespace MeshCreation
         {
             if (IsInsideChunk(hexPos))
             {
-                return _chunkData.GetHexByPos(hexPos);
+                return _chunkData.GetHexTypeByPos(hexPos);
             }
 
             if (IsOutsideChunkHeight(hexPos))
@@ -172,7 +176,7 @@ namespace MeshCreation
 
             if (WorldGenerator.Instance.IsGenerated(adjChunkPosition, out ChunkData adjChunk))
             {
-                return adjChunk.GetHexByPos(adjHexPos);
+                return adjChunk.GetHexTypeByPos(adjHexPos);
             }
 
             return HexType.Void;
