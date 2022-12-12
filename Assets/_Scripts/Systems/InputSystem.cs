@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Utilities;
 
@@ -15,20 +14,21 @@ public class InputSystem : Singleton<InputSystem>
     };
 
     public bool IsMoving => MoveVector.magnitude >= 0.1f;
-    public bool IsMouseButtonPressed => buttonPressed.Values.Any(pressed => pressed);
+    public bool IsMouseButtonPressed => buttonPressed[InputType.MouseLeft] || buttonPressed[InputType.MouseRight];
 
 
     private void Update()
     {
         GetInputAxis();
         GetMouseInput();
+        GetKeyboardInput();
     }
 
 
     private void GetInputAxis()
     {
-        var horizontalAxis = Input.GetAxis("Horizontal");
-        var verticalAxis = Input.GetAxis("Vertical");
+        float horizontalAxis = Input.GetAxis("Horizontal");
+        float verticalAxis = Input.GetAxis("Vertical");
 
         MoveVector = new Vector2(horizontalAxis, verticalAxis).normalized;
     }
@@ -39,9 +39,22 @@ public class InputSystem : Singleton<InputSystem>
         buttonPressed[InputType.MouseRight] = Input.GetMouseButtonDown(1);
     }
 
+    private void GetKeyboardInput()
+    {
+        buttonPressed[InputType.Shift] = Input.GetKeyDown(KeyCode.LeftShift);
+        buttonPressed[InputType.Ctrl] = Input.GetKeyDown(KeyCode.LeftControl);
+        buttonPressed[InputType.Space] = Input.GetKeyDown(KeyCode.Space);
+        buttonPressed[InputType.Launch] = Input.GetKeyDown(KeyCode.E);
+    }
+
+
     public enum InputType : byte
     {
         MouseLeft = 0,
-        MouseRight = 1
+        MouseRight = 1,
+        Shift = 2,
+        Ctrl = 3,
+        Space = 4,
+        Launch = 5
     }
 }

@@ -359,7 +359,7 @@ GameObject:
   - component: {fileID: 1163341471010937462}
   - component: {fileID: 1163341471010937457}
   m_Layer: 0
-  m_Name: DontDestroyOnLoadSystems
+  m_Name: Systems
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

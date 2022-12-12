@@ -11,8 +11,10 @@ namespace MeshCreation
         private readonly Camera _cam;
 
         private Vector2Int _currentChunk;
+        
+        private readonly RocketLauncher _launcher;
 
-        public HexagonInteractor(Transform player, Camera cam)
+        public HexagonInteractor(Transform player, Camera cam, RocketLauncher launcher)
         {
             _player = player;
             _cam = cam;
@@ -22,12 +24,29 @@ namespace MeshCreation
             _hexagonHeight = WorldGenerator.Instance.HexagonHeight;
 
             _currentChunk = new Vector2Int(int.MaxValue, int.MaxValue);
+
+            _launcher = launcher;
+            _launcher.Init(this);
         }
 
 
         public void Update()
         {
-            InteractWithHexes();
+            HandleCameraRay(out RaycastHit hitInfo);
+            InteractWithHexes(hitInfo);
+            LaunchRockets(hitInfo);
+        }
+
+        public void HandleRocketExplosion(Vector3 blastPosition)
+        {
+            Debug.LogWarning(blastPosition);
+        }
+        
+        private void HandleCameraRay(out RaycastHit raycastHit)
+        {
+            Ray cameraRay = _cam.ViewportPointToRay(InputSystem.SCREEN_CENTRE);
+
+            Physics.Raycast(cameraRay, out raycastHit);
         }
 
         public void GenerateTerrainAroundPlayer()
@@ -44,20 +63,13 @@ namespace MeshCreation
             WorldGenerator.Instance.GenerateWorld(chunkPos);
         }
 
-        private void InteractWithHexes()
+        private void InteractWithHexes(RaycastHit hitInfo)
         {
             if (!InputSystem.Instance.IsMouseButtonPressed)
             {
                 return;
             }
-
-            Ray cameraRay = _cam.ViewportPointToRay(InputSystem.SCREEN_CENTRE);
-
-            if (!Physics.Raycast(cameraRay, out RaycastHit hitInfo))
-            {
-                return;
-            }
-
+            
             bool isDestroying = InputSystem.Instance.buttonPressed[InputSystem.InputType.MouseLeft];
             int multiplier = isDestroying ? -1 : 1;
 
@@ -74,6 +86,16 @@ namespace MeshCreation
 
                 chunkData.chunkGenerator.ChangeHexTypeAtPosition(hexPos, isDestroying ? HexType.Void : HexType.Dirt);
             }
+        }
+
+        private void LaunchRockets(RaycastHit hitInfo)
+        {
+            if (!InputSystem.Instance.buttonPressed[InputSystem.InputType.Launch])
+            {
+                return;
+            }
+
+            _launcher.LaunchRocket(hitInfo.point);
         }
 
         private Vector2Int GetChunkByHexPosition(Vector3Int hexLocalCoords)

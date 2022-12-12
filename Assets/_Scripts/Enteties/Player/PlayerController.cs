@@ -9,6 +9,7 @@ namespace Player
     public class PlayerController : SlowUpdater
     {
         [SerializeField] private Mech mech;
+        [SerializeField] private RocketLauncher launcher;
         [SerializeField] private bool applyGravity=true;
 
         [Space]
@@ -41,7 +42,7 @@ namespace Player
             Cursor.lockState = CursorLockMode.Locked;
 
             mech.InitLegs(_transform);
-            _hexagonInteractor = new HexagonInteractor(_transform, _cam);
+            _hexagonInteractor = new HexagonInteractor(_transform, _cam, launcher);
 
             slowActions.Add(_hexagonInteractor.GenerateTerrainAroundPlayer);
         }
